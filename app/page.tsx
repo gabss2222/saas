@@ -552,7 +552,7 @@ export default function Home() {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value: number) => formatarMoeda(value)}
+                        formatter={(value: any) => formatarMoeda(Number(value) || 0)}
                         contentStyle={{ 
                           backgroundColor: 'white', 
                           border: '1px solid #e2e8f0',
