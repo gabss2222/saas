@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 interface Recommendation {
   titulo: string
@@ -7,11 +8,15 @@ interface Recommendation {
   pilar: 'Estratégia de Preço' | 'Otimização de Custos' | 'Marketing e Destaque'
 }
 
+// Inicializa a biblioteca do Google Generative AI
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { lucroLiquido, margemLucro, nomePrato, precoVenda, custoIngredientes, taxaMarketplace } = body
 
+    // 1. Validação de Parâmetros Obrigatórios (Mantido do original)
     if (lucroLiquido === undefined || margemLucro === undefined) {
       return NextResponse.json(
         { error: 'Parâmetros obrigatórios não fornecidos' },
@@ -19,16 +24,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const openaiApiKey = process.env.OPENAI_API_KEY
+    // 2. Verificação de Chave de API do Google (Substituído OpenAI por Google)
+    const googleAiApiKey = process.env.GOOGLE_AI_API_KEY
 
-    if (!openaiApiKey) {
+    if (!googleAiApiKey) {
       return NextResponse.json(
-        { error: 'OpenAI API key não configurada' },
+        { error: 'Google AI API key não configurada no .env.local' },
         { status: 500 }
       )
     }
 
-    // Preparar o prompt para a OpenAI
+    // 3. Preparar o prompt extenso de Consultoria Sênior (Mantido INTEGRALMENTE)
     const prompt = `Você é um Consultor Sênior de Engenharia de Cardápio. Não dê respostas óbvias. Analise o lucro_liquido e o nome do prato para sugerir estratégias de Markup, redução de desperdício em insumos específicos e como transformar esse prato em um "Best Seller" no delivery.
 
 Dados do prato:
@@ -73,91 +79,68 @@ IMPORTANTE: Retorne APENAS um JSON válido, sem texto adicional, no seguinte for
 
 Certifique-se de que cada descricao_detalhada tenha pelo menos 3 frases técnicas e específicas.`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`
+    // 4. Chamada ao Google Gemini 1.5 Flash (O modelo mais rápido e gratuito)
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
       },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um Consultor Sênior de Engenharia de Cardápio. Não dê respostas óbvias. Forneça análises estratégicas, técnicas e acionáveis focadas em Markup, redução de desperdício em insumos específicos e transformação de pratos em Best Sellers no delivery. Sempre retorne JSON válido quando solicitado.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500
-      })
-    })
+    });
 
-    if (!response.ok) {
-      const errorData = await response.text()
-      console.error('Erro da OpenAI:', errorData)
-      return NextResponse.json(
-        { error: 'Erro ao processar recomendação da IA' },
-        { status: response.status }
-      )
-    }
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
 
-    const data = await response.json()
-    const content = data.choices[0]?.message?.content || ''
+    const response = await result.response;
+    const content = response.text();
 
     try {
-      // Tentar extrair JSON do conteúdo (pode vir com texto adicional)
-      let jsonContent = content.trim()
+      // 5. Lógica de extração e limpeza de JSON (Mantido para robustez)
+      let jsonContent = content.trim();
       
-      // Se o conteúdo começa com ```json, remover
       if (jsonContent.startsWith('```json')) {
-        jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+        jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
       } else if (jsonContent.startsWith('```')) {
-        jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '')
+        jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
       
-      // Tentar encontrar o JSON no conteúdo
-      const jsonMatch = jsonContent.match(/\{[\s\S]*\}/)
+      const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        jsonContent = jsonMatch[0]
+        jsonContent = jsonMatch[0];
       }
       
-      const parsed = JSON.parse(jsonContent)
-      const recomendacoes = parsed.recomendacoes || []
+      const parsed = JSON.parse(jsonContent);
+      const recomendacoes = parsed.recomendacoes || [];
 
-      // Validar e garantir que temos exatamente 3 recomendações
+      // 6. Validação de Estrutura (Mantido do original)
       if (recomendacoes.length !== 3) {
-        throw new Error('Número incorreto de recomendações')
+        throw new Error('Número incorreto de recomendações');
       }
 
-      // Validar estrutura de cada recomendação
       const recomendacoesValidadas: Recommendation[] = recomendacoes.map((rec: any, index: number) => {
-        const pilares = ['Estratégia de Preço', 'Otimização de Custos', 'Marketing e Destaque']
-        const impactos = ['Alto', 'Médio', 'Baixo']
+        const pilares = ['Estratégia de Preço', 'Otimização de Custos', 'Marketing e Destaque'];
+        const impactos = ['Alto', 'Médio', 'Baixo'];
         
         return {
           titulo: rec.titulo || `Recomendação ${index + 1}`,
           descricao_detalhada: rec.descricao_detalhada || 'Análise detalhada não disponível.',
           nivel_de_impacto: impactos.includes(rec.nivel_de_impacto) ? rec.nivel_de_impacto : 'Médio',
           pilar: pilares[index] || rec.pilar || pilares[index % 3]
-        }
-      })
+        };
+      });
 
       return NextResponse.json({
         recommendations: recomendacoesValidadas
-      })
+      });
+
     } catch (parseError) {
-      console.error('Erro ao parsear JSON da OpenAI:', parseError)
-      // Fallback: criar recomendações padrão baseadas nos dados
+      console.error('Erro ao parsear JSON do Gemini:', parseError);
       return NextResponse.json({
-        recommendations: gerarRecomendacoesPadrao(margemLucro, custoIngredientes, precoVenda, taxaMarketplace, nomePrato, lucroLiquido)
-      })
+        recommendations: gerarRecomendacoesPadrao(margemLucro, custoIngredientes, precoVenda, taxaMarketplace, nomePrato || '', lucroLiquido)
+      });
     }
   } catch (error) {
-    console.error('Erro ao processar recomendação:', error)
+    console.error('Erro ao processar recomendação:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -165,6 +148,7 @@ Certifique-se de que cada descricao_detalhada tenha pelo menos 3 frases técnica
   }
 }
 
+// 7. FUNÇÃO DE FALLBACK COMPLETA (Mantida INTEGRALMENTE)
 function gerarRecomendacoesPadrao(
   margemLucro: number,
   custoIngredientes: number,
