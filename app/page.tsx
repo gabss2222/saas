@@ -313,7 +313,9 @@ export default function Home() {
                       return (
                         <div
                           key={item.id}
-                          className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-indigo-300"
+                          className={`fixed left-0 top-0 h-full bg-white shadow-xl border-r border-slate-200 transition-all duration-300 z-40 ${
+                            sidebarAberto ? 'w-80 translate-x-0' : 'w-20 -translate-x-full md:translate-x-0'
+                          }`}
                         >
                           <div className="flex justify-between items-start mb-3">
                             <h4 className="font-semibold text-sm text-slate-900">{item.nomePrato}</h4>
@@ -391,7 +393,9 @@ export default function Home() {
       </aside>
 
       {/* Conteúdo Principal */}
-      <main className={`transition-all duration-300 ${sidebarAberto ? 'ml-80' : 'ml-20'}`}>
+      <main className={`transition-all duration-300 p-4 md:p-8 ${
+  sidebarAberto ? 'md:ml-80' : 'md:ml-20'
+}`}
         <div className="p-8">
           {/* Header */}
           <div className="mb-8">
@@ -529,7 +533,7 @@ export default function Home() {
           </div>
 
           {/* Segunda linha do Bento Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
             {/* Card 4: Gráfico de Pizza - Ocupa 2 colunas */}
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Distribuição de Receita</h2>
