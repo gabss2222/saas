@@ -184,7 +184,7 @@ export default function Home() {
     }
   }
 
-  // Auto-save: salva automaticamente após 3 segundos de inatividade no teclado
+  // Auto-save: salva automaticamente após 3 segundos de inatividade
   useEffect(() => {
     const autosave = async () => {
       if (!nomePrato.trim() || precoVendaNum <= 0 || custoIngredientesNum <= 0) return
@@ -226,12 +226,12 @@ export default function Home() {
           <div className="p-6 border-b border-slate-50 flex items-center justify-between">
             {sidebarAberto && (
               <div className="flex items-center gap-3 animate-fadeIn">
-                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
                   <TrendingUp className="text-white w-6 h-6" />
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Analytics</h2>
-                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Premium SaaS</p>
+                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">premium delivery</p>
                 </div>
               </div>
             )}
@@ -287,11 +287,11 @@ export default function Home() {
                       <div className="mt-4 pt-4 border-t border-dashed border-slate-100 space-y-2 animate-slideDown">
                         <div className="flex justify-between text-[11px] font-medium">
                           <span className="text-slate-400">Preço Venda:</span>
-                          <span className="text-slate-700">{formatarMoeda(item.precoVenda)}</span>
+                          <span className="text-slate-700 font-bold">{formatarMoeda(item.precoVenda)}</span>
                         </div>
                         <div className="flex justify-between text-[11px] font-medium">
                           <span className="text-slate-400">CMV:</span>
-                          <span className="text-red-500">-{formatarMoeda(item.custoIngredientes || 0)}</span>
+                          <span className="text-red-500 font-bold">-{formatarMoeda(item.custoIngredientes || 0)}</span>
                         </div>
                         <div className="mt-2 bg-indigo-50 p-2 rounded-lg">
                           <p className="text-[9px] text-indigo-600 font-bold text-center">Data: {formatarDataCompleta(item.created_at || '')}</p>
@@ -460,7 +460,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Seção da IA - FIX: Ícone não cortado */}
+            {/* Seção da IA */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
               <div className="p-8 border-b border-slate-50 bg-[#fafaff]">
                 <div className="flex items-center gap-4">
