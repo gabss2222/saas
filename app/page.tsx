@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * Analytics Premium SaaS - Dashboard de Delivery
+ * Versão Final: Gráfico Ultra-Responsivo sem cortes no Mobile
+ */
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { 
@@ -22,7 +27,8 @@ import {
   RefreshCw,
   Sparkles,
   Target,
-  Zap
+  Zap,
+  LayoutDashboard
 } from 'lucide-react'
 import { 
   PieChart, 
@@ -30,16 +36,13 @@ import {
   Cell, 
   ResponsiveContainer, 
   Legend, 
-  Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid
+  Tooltip
 } from 'recharts'
 import AIRecommendations from './components/AIRecommendations'
 
-// Interface detalhada para o histórico
+/**
+ * Interface para os dados do histórico
+ */
 interface HistoricoItem {
   id: number
   nomePrato: string
@@ -54,21 +57,38 @@ interface HistoricoItem {
 }
 
 export default function Home() {
-  // Estados do Formulário
+  // ==========================================
+  // ESTADOS PRINCIPAIS
+  // ==========================================
   const [nomePrato, setNomePrato] = useState('')
   const [precoVenda, setPrecoVenda] = useState('')
   const [custoIngredientes, setCustoIngredientes] = useState('')
   const [taxaMarketplace, setTaxaMarketplace] = useState('')
   
-  // Estados de Controle de UI
   const [sidebarAberto, setSidebarAberto] = useState(true)
   const [detalheAberto, setDetalheAberto] = useState<number | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [carregandoHistorico, setCarregandoHistorico] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
+  
   const [historico, setHistorico] = useState<HistoricoItem[]>([])
   const ultimoCalculoSalvo = useRef<string>('')
 
-  // Função para formatar data (há X min)
+  /**
+   * Detector de Mobile para ajustes de layout dinâmicos
+   */
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  /**
+   * Formata a data em tempo relativo (Ex: Há 10 min)
+   */
   const formatarData = useCallback((dataString: string) => {
     if (!dataString) return ''
     const data = new Date(dataString)
@@ -85,20 +105,17 @@ export default function Home() {
     return data.toLocaleDateString('pt-BR')
   }, [])
 
-  // Função para formatar data completa nos detalhes
   const formatarDataCompleta = useCallback((dataString: string) => {
     if (!dataString) return ''
     const data = new Date(dataString)
     return data.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
     })
   }, [])
 
-  // Busca dados no banco de dados (Supabase)
+  /**
+   * Busca os dados no Supabase
+   */
   const carregarHistorico = useCallback(async () => {
     setCarregandoHistorico(true)
     try {
@@ -135,7 +152,7 @@ export default function Home() {
     carregarHistorico()
   }, [carregarHistorico])
 
-  // Lógica de cálculo em tempo real
+  // Lógica de cálculo matemático
   const precoVendaNum = parseFloat(precoVenda) || 0
   const custoIngredientesNum = parseFloat(custoIngredientes) || 0
   const taxaMarketplaceNum = parseFloat(taxaMarketplace) || 0
@@ -144,22 +161,22 @@ export default function Home() {
   const lucroLiquido = precoVendaNum - custoIngredientesNum - taxaMarketplaceValor
   const margemLucro = precoVendaNum > 0 ? (lucroLiquido / precoVendaNum) * 100 : 0
 
-  // Dados do gráfico de pizza
+  /**
+   * Dados do Gráfico de Distribuição
+   */
   const dadosGrafico = [
     { name: 'Lucro Líquido', value: Math.max(0, lucroLiquido), cor: '#6366f1' },
     { name: 'Custo CMV', value: custoIngredientesNum, cor: '#e2e8f0' },
     { name: 'Taxas App', value: taxaMarketplaceValor, cor: '#94a3b8' }
   ].filter(item => item.value > 0)
 
-  // Formatação de moeda brasileira
   const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(valor)
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)
   }
 
-  // Função para salvar manualmente
+  /**
+   * Salvar Manual
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!nomePrato.trim() || precoVendaNum <= 0) return
@@ -174,24 +191,23 @@ export default function Home() {
         lucro_liquido: lucroLiquido,
         margem_lucro: margemLucro
       }])
-
       if (error) throw error
       await carregarHistorico()
     } catch (error) {
-      console.error('Erro ao salvar cálculo:', error)
+      console.error('Erro ao salvar:', error)
     } finally {
       setSalvando(false)
     }
   }
 
-  // Auto-save: salva automaticamente após 3 segundos de inatividade
+  /**
+   * Auto-save inteligente (Debounce de 3s)
+   */
   useEffect(() => {
     const autosave = async () => {
       if (!nomePrato.trim() || precoVendaNum <= 0 || custoIngredientesNum <= 0) return
-      
-      const hash = `${nomePrato}-${precoVendaNum}-${custoIngredientesNum}`
+      const hash = `${nomePrato}-${precoVendaNum}-${custoIngredientesNum}-${taxaMarketplaceNum}`
       if (ultimoCalculoSalvo.current === hash) return
-
       try {
         const { error } = await supabase.from('calculos').insert([{
           nome_prato: nomePrato.trim(),
@@ -201,16 +217,12 @@ export default function Home() {
           lucro_liquido: lucroLiquido,
           margem_lucro: margemLucro
         }])
-        
         if (!error) {
           ultimoCalculoSalvo.current = hash
           carregarHistorico()
         }
-      } catch (e) {
-        console.error('Erro no autosave:', e)
-      }
+      } catch (e) { console.error(e) }
     }
-
     const timer = setTimeout(() => { autosave() }, 3000)
     return () => clearTimeout(timer)
   }, [nomePrato, precoVenda, custoIngredientes, taxaMarketplace, carregarHistorico, lucroLiquido, margemLucro, precoVendaNum, custoIngredientesNum, taxaMarketplaceNum])
@@ -218,7 +230,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#fcfcfd] text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
-      {/* Sidebar - MOBILE FIX: z-50 e translate-x */}
+      {/* Sidebar - Logotipo Analytics premium delivery */}
       <aside className={`fixed left-0 top-0 h-full bg-white shadow-2xl border-r border-slate-100 transition-all duration-500 z-50 ${
         sidebarAberto ? 'w-80 translate-x-0' : 'w-20 -translate-x-full md:translate-x-0'
       }`}>
@@ -226,18 +238,18 @@ export default function Home() {
           <div className="p-6 border-b border-slate-50 flex items-center justify-between">
             {sidebarAberto && (
               <div className="flex items-center gap-3 animate-fadeIn">
-                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100 flex-shrink-0">
                   <TrendingUp className="text-white w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-800 tracking-tight">Analytics</h2>
-                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">premium delivery</p>
+                  <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none">Analytics</h2>
+                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1">premium delivery</p>
                 </div>
               </div>
             )}
             <button 
               onClick={() => setSidebarAberto(!sidebarAberto)}
-              className="p-2.5 hover:bg-slate-50 rounded-xl transition-all text-slate-400 hover:text-indigo-600"
+              className="p-2.5 hover:bg-slate-50 rounded-xl transition-all text-slate-400"
             >
               {sidebarAberto ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -258,9 +270,9 @@ export default function Home() {
                     <div className="flex justify-between items-start mb-2">
                       <div className="max-w-[140px]">
                         <h4 className="font-bold text-sm text-slate-800 truncate">{item.nomePrato}</h4>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <Calendar className="w-3 h-3 text-slate-300" />
-                          <span className="text-[10px] font-medium text-slate-400">{item.data}</span>
+                        <div className="flex items-center gap-1.5 mt-1 text-slate-400">
+                          <Calendar className="w-3 h-3" />
+                          <span className="text-[10px] font-medium">{item.data}</span>
                         </div>
                       </div>
                       <div className="px-2 py-1 rounded-lg text-[9px] font-black border bg-green-50 text-green-600 border-green-100">
@@ -270,7 +282,7 @@ export default function Home() {
 
                     <div className="flex items-end justify-between mt-4">
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lucro</p>
+                        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Lucro</p>
                         <p className="text-lg font-black text-green-600">
                           {formatarMoeda(item.lucroLiquido)}
                         </p>
@@ -293,8 +305,8 @@ export default function Home() {
                           <span className="text-slate-400">CMV:</span>
                           <span className="text-red-500 font-bold">-{formatarMoeda(item.custoIngredientes || 0)}</span>
                         </div>
-                        <div className="mt-2 bg-indigo-50 p-2 rounded-lg">
-                          <p className="text-[9px] text-indigo-600 font-bold text-center">Data: {formatarDataCompleta(item.created_at || '')}</p>
+                        <div className="mt-2 bg-indigo-50 p-2 rounded-lg text-[9px] text-indigo-600 font-bold text-center">
+                          Data: {formatarDataCompleta(item.created_at || '')}
                         </div>
                       </div>
                     )}
@@ -306,7 +318,7 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Conteúdo Principal - MOBILE FIX: md:ml-80 */}
+      {/* Conteúdo Principal */}
       <main className={`transition-all duration-500 p-4 md:p-10 ${sidebarAberto ? 'md:ml-80' : 'md:ml-20'}`}>
         <div className="max-w-6xl mx-auto">
           
@@ -320,7 +332,7 @@ export default function Home() {
               </button>
             )}
             <div>
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none">
                 Dashboard <span className="text-indigo-600">Pro</span>
               </h1>
               <p className="text-slate-500 font-medium mt-2 flex items-center gap-2">
@@ -331,8 +343,9 @@ export default function Home() {
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Bloco Simulação */}
             <section className="md:col-span-2 lg:col-span-2 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8 md:p-10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 transition-all group-hover:scale-150 duration-700" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 transition-all group-hover:scale-150 duration-700 opacity-60" />
               <h2 className="text-2xl font-black text-slate-800 mb-8 flex items-center gap-3 relative">
                 <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
                   <UtensilsCrossed className="text-indigo-600 w-5 h-5" />
@@ -364,7 +377,7 @@ export default function Home() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Custo Insumos</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Custo CMV</label>
                     <input 
                       type="number" 
                       value={custoIngredientes}
@@ -397,34 +410,37 @@ export default function Home() {
               </form>
             </section>
 
-            {/* Cards de Resultado */}
+            {/* Resultado: Lucro Líquido */}
             <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all duration-500">
               <div>
                 <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center mb-6">
                   <DollarSign className="text-green-600 w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-2">Lucro Líquido</h3>
-                <p className={`text-5xl font-black tracking-tighter ${lucroLiquido >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
+                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-2 text-center md:text-left">Lucro Líquido</h3>
+                <p className={`text-4xl md:text-5xl font-black tracking-tighter text-center md:text-left ${lucroLiquido >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
                   {formatarMoeda(lucroLiquido)}
                 </p>
               </div>
-              <div className="mt-8 flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 w-fit px-3 py-1.5 rounded-full">
+              <div className="mt-8 flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 w-fit px-3 py-1.5 rounded-full mx-auto md:mx-0">
                 <TrendingUp className="w-4 h-4" />
                 <span>Resultado por unidade</span>
               </div>
             </div>
 
+            {/* Resultado: Margem Real */}
             <div className="bg-indigo-600 p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 flex flex-col justify-between text-white hover:scale-[1.02] transition-all duration-500">
               <div>
                 <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
                   <Percent className="text-white w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-black text-indigo-200 uppercase tracking-widest mb-2">Margem Real</h3>
-                <p className="text-5xl font-black tracking-tighter">
+                <h3 className="text-sm font-black text-indigo-200 uppercase tracking-widest mb-2 text-center md:text-left">Margem Real</h3>
+                <p className="text-5xl font-black tracking-tighter text-center md:text-left">
                   {margemLucro.toFixed(1)}<span className="text-2xl text-indigo-300">%</span>
                 </p>
               </div>
-              <div className="mt-8 flex items-center gap-2 text-xs font-bold bg-white/10 w-fit px-3 py-1.5 rounded-full uppercase">
+              <div className={`mt-8 flex items-center gap-2 text-xs font-bold w-fit px-3 py-1.5 rounded-full mx-auto md:mx-0 uppercase ${
+                margemLucro >= 20 ? 'bg-white/10 text-white' : 'bg-red-500/20 text-red-100'
+              }`}>
                 {margemLucro >= 20 ? 'SAÚDE EXCELENTE' : 'REVISAR PREÇOS'}
               </div>
             </div>
@@ -432,35 +448,58 @@ export default function Home() {
 
           {/* Segunda Linha: Gráfico e IA */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-              <div className="flex items-center justify-between mb-10">
-                <h3 className="text-xl font-black text-slate-800">Distribuição de Receita</h3>
-                <Info className="text-slate-300 w-5 h-5 cursor-help" />
+            
+            {/* Bloco Gráfico - Corrigido para Mobile sem cortes */}
+            <div className="lg:col-span-2 bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+              <div className="flex flex-col mb-10 px-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none">Distribuição de Receita</h3>
+                  <Info className="text-slate-300 w-5 h-5 cursor-help" />
+                </div>
+                {/* INSTRUÇÃO MOBILE CINZA EM FONTE MENOR */}
+                {isMobile && (
+                  <p className="text-[11px] text-slate-400 mt-2 font-medium italic animate-fadeIn">
+                    Toque no gráfico para informações detalhadas
+                  </p>
+                )}
               </div>
-              <div className="h-80 w-full">
+              
+              <div className="h-80 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 0, right: isMobile ? 5 : 40, left: isMobile ? 5 : 40, bottom: 0 }}>
                     <Pie
                       data={dadosGrafico}
                       cx="50%"
                       cy="50%"
-                      innerRadius={80}
-                      outerRadius={110}
+                      innerRadius={isMobile ? 65 : 80}
+                      outerRadius={isMobile ? 85 : 110}
                       paddingAngle={8}
                       dataKey="value"
                       strokeWidth={0}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                      // DESATIVA AS ESCRITAS LATERAIS (LABELS) NO MOBILE PARA NÃO CORTAR
+                      labelLine={!isMobile}
+                      label={isMobile ? false : ({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
                     >
-                      {dadosGrafico.map((entry, index) => <Cell key={index} fill={entry.cor} className="outline-none" />)}
+                      {dadosGrafico.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.cor} className="outline-none" />
+                      ))}
                     </Pie>
-                    <Tooltip formatter={(v: any) => formatarMoeda(Number(v) || 0)} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                    <Legend />
+                    <Tooltip 
+                      formatter={(v: any) => formatarMoeda(Number(v) || 0)}
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36} 
+                      iconType="circle"
+                      wrapperStyle={{ paddingTop: '20px' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Seção da IA */}
+            {/* Consultoria Profissional (IA) - Fix Ícone */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
               <div className="p-8 border-b border-slate-50 bg-[#fafaff]">
                 <div className="flex items-center gap-4">
@@ -468,8 +507,8 @@ export default function Home() {
                     <Sparkles className="text-white w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-slate-800">Consultoria Profissional</h3>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Análise por IA</p>
+                    <h3 className="text-xl font-black text-slate-800 leading-none">Consultoria Profissional</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">Análise estratégica por IA</p>
                   </div>
                 </div>
               </div>
@@ -484,6 +523,7 @@ export default function Home() {
                 />
               </div>
             </div>
+
           </div>
         </div>
       </main>
