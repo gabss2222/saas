@@ -259,7 +259,9 @@ export default function Home() {
     }
 
     const timeoutId = setTimeout(() => {
-      salvando ? null : salvarCalculo()
+      if (!salvando) {
+        salvarCalculo()
+      }
     }, 1000)
 
     return () => clearTimeout(timeoutId)
@@ -267,9 +269,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full bg-white shadow-xl border-r border-slate-200 transition-all duration-300 z-30 ${
-        sidebarAberto ? 'w-80' : 'w-20'
+      {/* Sidebar - MOBILE FIX: z-40 e transform */}
+      <aside className={`fixed left-0 top-0 h-full bg-white shadow-xl border-r border-slate-200 transition-all duration-300 z-40 ${
+        sidebarAberto ? 'w-80 translate-x-0' : 'w-20 -translate-x-full md:translate-x-0'
       }`}>
         <div className="flex flex-col h-full">
           {/* Header da Sidebar */}
@@ -313,9 +315,7 @@ export default function Home() {
                       return (
                         <div
                           key={item.id}
-                          className={`fixed left-0 top-0 h-full bg-white shadow-xl border-r border-slate-200 transition-all duration-300 z-40 ${
-                            sidebarAberto ? 'w-80 translate-x-0' : 'w-20 -translate-x-full md:translate-x-0'
-                          }`}
+                          className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-indigo-300"
                         >
                           <div className="flex justify-between items-start mb-3">
                             <h4 className="font-semibold text-sm text-slate-900">{item.nomePrato}</h4>
@@ -392,11 +392,9 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Conteúdo Principal */}
-      <main className={`transition-all duration-300 p-4 md:p-8 ${
-  sidebarAberto ? 'md:ml-80' : 'md:ml-20'
-}`}
-        <div className="p-8">
+      {/* Conteúdo Principal - MOBILE FIX: md:ml-80 */}
+      <main className={`transition-all duration-300 p-4 md:p-8 ${sidebarAberto ? 'md:ml-80' : 'md:ml-20'}`}>
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-slate-900 mb-2">
@@ -405,7 +403,7 @@ export default function Home() {
             <p className="text-slate-600">Monitore e otimize a rentabilidade dos seus pratos</p>
           </div>
 
-          {/* Bento Grid Layout */}
+          {/* Bento Grid Layout - MOBILE FIX: grid-cols-1 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Card 1: Formulário - Ocupa 2 colunas */}
             <div className="md:col-span-2 lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -425,7 +423,7 @@ export default function Home() {
                       id="nomePrato"
                       value={nomePrato}
                       onChange={(e) => setNomePrato(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all bg-white text-slate-900"
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all bg-white text-slate-900 font-semibold"
                       placeholder="Ex: Pizza Margherita"
                     />
                   </div>
@@ -445,7 +443,7 @@ export default function Home() {
                         onChange={(e) => setPrecoVenda(e.target.value)}
                         step="0.01"
                         min="0"
-                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all bg-white text-slate-900"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all bg-white text-slate-900 font-semibold"
                         placeholder="0.00"
                       />
                     </div>
@@ -464,7 +462,7 @@ export default function Home() {
                         onChange={(e) => setCustoIngredientes(e.target.value)}
                         step="0.01"
                         min="0"
-                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all bg-white text-slate-900"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all bg-white text-slate-900 font-semibold"
                         placeholder="0.00"
                       />
                     </div>
@@ -485,7 +483,7 @@ export default function Home() {
                       step="0.1"
                       min="0"
                       max="100"
-                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all bg-white text-slate-900"
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all bg-white text-slate-900 font-semibold"
                       placeholder="0.0"
                     />
                   </div>
@@ -502,7 +500,7 @@ export default function Home() {
             </div>
 
             {/* Card 2: Lucro Líquido */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-center">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Lucro Líquido</h3>
                 {lucroFinal >= 0 ? (
@@ -517,7 +515,7 @@ export default function Home() {
             </div>
 
             {/* Card 3: Margem de Lucro */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-center">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Margem de Lucro</h3>
                 {margemLucro >= 20 ? (
@@ -533,7 +531,7 @@ export default function Home() {
           </div>
 
           {/* Segunda linha do Bento Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 4: Gráfico de Pizza - Ocupa 2 colunas */}
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Distribuição de Receita</h2>
